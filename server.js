@@ -3,6 +3,7 @@ var express =  require('express');
 var fs = require('fs');
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
+var mysql = require('mysql');
 
 var app = express();
 app.listen(80);
@@ -153,7 +154,6 @@ class Database {
             });
         })
     }
-    //
 
     static writeFile (path, stringData) {
         return new Promise ( (resolve, reject) => {
@@ -164,7 +164,6 @@ class Database {
         })
     }
 
-    //
     static updateUserGoods (path, name, newGoods) {
         return new Promise( (resolve, reject) => {
             Database.readFile(path)
@@ -408,7 +407,6 @@ class Server  {
 Server.start();
 
 
-var mysql = require('mysql');
 var connection = mysql.createConnection({
     host     : 'localhost',
     user     : 'root',
