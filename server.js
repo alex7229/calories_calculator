@@ -109,43 +109,64 @@ class CheckUserData {
 
 class Database {
 
-    static findUserPassword (path, name, password) {
-        return new Promise ((resolve, reject) => {
-            Database.readFile(path)
-            .then (data=> {
-                if (data !== '') {
-                    let user = data.filter( (user) => {
-                        return user.name === name
-                    });
-                    if (user.length === 0) {
-                        resolve ('new user')
-                    } else if (user[0].password === password) {
-                        resolve ('old user')
+    constructor () {
+        this.sqlConnection;
+    }
+
+    connect (databaseName) {
+        this.sqlConnection = mysql.createConnection({
+            host     : 'localhost',
+            user     : 'root',
+            password : 'mypassword',
+            database: databaseName
+        });
+        this.sqlConnection.connect();
+    }
+
+    dropConnection () {
+        this.sqlConnection.end()
+    }
+
+    findUserId (name, password) {
+        return new Promise ( (resolve, reject) => {
+            let sql = `SELECT id, password FROM users_auth WHERE name = ${this.sqlConnection.escape(name)}`;
+            this.sqlConnection.query(sql, (err, results) => {
+                if (err) reject(err.message);
+                if (results.length === 1) {
+                    let storedPassword = results[0].password;
+                    if (storedPassword === password) {
+                        resolve(results[0].id);
                     } else {
                         reject ('not correct password')
                     }
                 } else {
-                    resolve('new user')
+                    resolve ('new user')
                 }
-            }, error => {
-                reject(error.message)
             });
-        })
-    }
-
-    static findUserGoods (path, name) {
-        return new Promise ( (resolve) => {
-            Database.readFile(path)
-                .then ( (data) => {
-                    let user = data.filter( (user) => {
-                        return user.name === name
-                    });
-                    resolve( user[0].goods);
-                });
         });
     }
 
-    static readFile (path) {
+    addUserAuth (name, password) {
+        return new Promise ( (resolve, reject) => {
+            let sql = `INSERT INTO users_auth (name, password) VALUES (${this.sqlConnection.escape(name)}, ${this.sqlConnection.escape(password)})`;
+            this.sqlConnection.query(sql, (err, results) => {
+                if (err) reject(err);
+                if (results) resolve ('success')
+            });
+        });
+    }
+
+    findUserGoods (id) {
+        return new Promise ( (resolve, reject) => {
+            let sql = 'SELECT good_name, calories_per_100grams, price_per_1kg FROM goods WHERE id = '+this.sqlConnection.escape(id);
+            this.sqlConnection.query(sql, (err, results) => {
+                if (err) reject(err.name);
+                resolve(results);
+            });
+        });
+    }
+
+    /*static readFile (path) {
         return new Promise ( (resolve, reject) => {
             fs.readFile(__dirname+path, 'utf8', (err, data) => {
                 if (err) reject(err.message);
@@ -162,9 +183,22 @@ class Database {
                 resolve ('saved')
             });
         })
-    }
+    }*/
 
-    static updateUserGoods (path, name, newGoods) {
+    updateUserGoods (path, name, newGoods) {
+
+
+
+
+
+
+
+
+
+
+
+
+
         return new Promise( (resolve, reject) => {
             Database.readFile(path)
                 .then ( (database) => {
@@ -193,9 +227,18 @@ class Database {
                     })
                 })
         })
+
+
+
+
     }
 
-    static saveUserGoods (path, name, password, newGoods) {
+    saveUserGoods (id, newGoods) {
+
+
+
+
+
         return new Promise ( (resolve, reject) => {
             Database.readFile(path)
             .then ( (data) => {
@@ -212,6 +255,11 @@ class Database {
                 })
             })
         })
+
+
+
+
+
     }
 
     static deleteUserGoods (path, name, goodList) {
@@ -283,21 +331,26 @@ class Server  {
             }
             next();
         },(req, res) => {
-            let path = '/usersData/calories.txt';
-            Database.findUserPassword(path, req.body.name, req.body.password)
-                .then ((result) => {
-                    if (result === 'old user') {
-                        Database.findUserGoods(path, req.body.name)
-                            .then ( (goods) => {
-                                res.send(JSON.stringify(goods))
-                            }, errorName => {
-                                res.status(500).send(errorName)
-                            });
-                    } else if (result === 'new user') {
+            let caloriesDatabase = new Database();
+            caloriesDatabase.connect('calories');
+            caloriesDatabase.findUserId(req.body.name, req.body.password)
+                .then((resultID) => {
+                    if (resultID === 'new user') {
+                        caloriesDatabase.dropConnection();
                         res.send(JSON.stringify([]))
+                    } else {
+                        caloriesDatabase.findUserGoods(resultID)
+                            .then( (resolve) => {
+                                caloriesDatabase.dropConnection();
+                                res.send(JSON.stringify(resolve))
+                            }, (err) => {
+                                caloriesDatabase.dropConnection();
+                                res.status(500).end(err);
+                            })
                     }
-                }, errorName => {
-                    res.status(500).send(errorName);
+                }, (err) => {
+                    caloriesDatabase.dropConnection();
+                    res.status(500).end(err);
                 });
         });
     }
@@ -310,30 +363,41 @@ class Server  {
                 res.status(500).end(err.message);
                 next(err);
             }
-            console.log(req.body.newGoods);
             next();
         }, (req, res) => {
-            let path = '/usersData/calories.txt';
-            Database.findUserPassword(path, req.body.name, req.body.password)
-                .then ( (result) => {
-                    if (result === 'old user') {
-                        Database.updateUserGoods(path, req.body.name, req.body.newGoods)
-                            .then ( (resolve) => {
-                                res.send('data is saved')
-                            }, error => {
-                                res.status(500).end(error.message)
+            let caloriesDatabase = new Database();
+            caloriesDatabase.connect('calories');
+            caloriesDatabase.findUserId(req.body.name, req.body.password)
+                .then((result) => {
+                    if (result === 'new user') {
+                        caloriesDatabase.addUserAuth(req.body.name, req.body.password)
+                            .then( () => {
+
+                            }, (err) => {
+
                             })
-                    } else if (result === 'new user') {
-                        Database.saveUserGoods(path, req.body.name, req.body.password, req.body.newGoods)
-                            .then ( () => {
-                                res.send('data is saved')
-                            }, error => {
-                                res.status(500).end(error.message)
-                            })
+                    } else {
+                        //caloriesDatabase.updateGOODS();
+
+
+
+
                     }
-                }, errorName => {
-                    res.status(500).send(errorName)
-                })
+                }, (err) => {
+                    caloriesDatabase.dropConnection();
+                    res.status(500).end(err);
+                });
+
+
+
+
+
+
+
+
+
+
+
         });
     }
 
@@ -407,16 +471,9 @@ class Server  {
 Server.start();
 
 
-var connection = mysql.createConnection({
-    host     : 'localhost',
-    user     : 'root',
-    password : 'mypassword',
-    database: 'world_x'
-});
-
-connection.connect();
 
 
+/*
 connection.query({
     sql: 'select * from `city` where `countrycode`=?',
     values: ['ukr']
@@ -425,3 +482,15 @@ connection.query({
 });
 
 connection.end();
+*/
+
+/*
+
+multiple insert
+
+INSERT INTO dbo.MyTable (ID, Name)
+ SELECT 123, 'Timmy'
+ UNION ALL
+ SELECT 124, 'Jonny'
+ UNION ALL
+ SELECT 125, 'Sally'*/
