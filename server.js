@@ -55,7 +55,7 @@ class CheckUserData {
         }
         let parsedGoods = JSON.parse(goods);
         if (Array.isArray(parsedGoods)) {
-            let properties = ['name', 'calories', 'weight', 'priceForWeight'];
+            let properties = ['good_name', 'calories_per_100grams', 'price_per_1kg'];
             parsedGoods.forEach( (good) => {
                 properties.forEach( (property) => {
                     if (!good.hasOwnProperty(property)) {
@@ -64,7 +64,7 @@ class CheckUserData {
                     if (typeof good[property] !== 'string') {
                         throw Error (`${property} property is not string type`)
                     }
-                    if (property !== 'name') {
+                    if (property !== 'good_name') {
                         let value = good[property];
                         let regExp = /^\s*([0-9]*(?:[\.,][0-9]+)?)\s*$/;
                         if (value.match(regExp) === null) {
@@ -140,7 +140,13 @@ class Database {
                         reject ('not correct password')
                     }
                 } else {
-                    resolve ('new user')
+                    //new user
+                    this.addUserAuth(name, password)
+                        .then( () => {
+                            resolve (this.findUserId(name, password))
+                        }, (err) => {
+                            reject(err.message)
+                        });
                 }
             });
         });
@@ -233,13 +239,16 @@ class Database {
 
     }
 
-    saveUserGoods (id, newGoods) {
+    multipleInsertUserGoods (id, newGoods) {
 
 
 
 
 
         return new Promise ( (resolve, reject) => {
+
+
+
             Database.readFile(path)
             .then ( (data) => {
                 let userGoods = {
@@ -305,7 +314,7 @@ class Database {
         for (i=0; i<goods.length; i++) {
             let hasDuplicates = false;
             for (let j=i+1; j<goods.length; j++) {
-                if (goods[i].name === goods[j].name) {
+                if (goods[i].good_name === goods[j].good_name) {
                     hasDuplicates = true;
                     break
                 }
@@ -335,23 +344,17 @@ class Server  {
             caloriesDatabase.connect('calories');
             caloriesDatabase.findUserId(req.body.name, req.body.password)
                 .then((resultID) => {
-                    if (resultID === 'new user') {
-                        caloriesDatabase.dropConnection();
-                        res.send(JSON.stringify([]))
-                    } else {
-                        caloriesDatabase.findUserGoods(resultID)
-                            .then( (resolve) => {
-                                caloriesDatabase.dropConnection();
-                                res.send(JSON.stringify(resolve))
-                            }, (err) => {
-                                caloriesDatabase.dropConnection();
-                                res.status(500).end(err);
-                            })
-                    }
-                }, (err) => {
-                    caloriesDatabase.dropConnection();
+                    return caloriesDatabase.findUserGoods(resultID);
+                })
+                .then( (userGoods) => {
+                    return res.send(JSON.stringify(userGoods))
+                })
+                .then( () => {
+                    return caloriesDatabase.dropConnection();
+                })
+                .catch( (err) => {
                     res.status(500).end(err);
-                });
+                })
         });
     }
 
@@ -368,21 +371,11 @@ class Server  {
             let caloriesDatabase = new Database();
             caloriesDatabase.connect('calories');
             caloriesDatabase.findUserId(req.body.name, req.body.password)
-                .then((result) => {
-                    if (result === 'new user') {
-                        caloriesDatabase.addUserAuth(req.body.name, req.body.password)
-                            .then( () => {
-
-                            }, (err) => {
-
-                            })
-                    } else {
-                        //caloriesDatabase.updateGOODS();
+                .then((userId) => {
 
 
 
 
-                    }
                 }, (err) => {
                     caloriesDatabase.dropConnection();
                     res.status(500).end(err);
