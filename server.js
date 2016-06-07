@@ -143,7 +143,7 @@ class Database {
                     //new user
                     this.addUserAuth(name, password)
                         .then( () => {
-                            resolve (this.findUserId(name, password))
+                            return this.findUserId(name, password)
                         }, (err) => {
                             reject(err.message)
                         });
@@ -164,7 +164,7 @@ class Database {
 
     findUserGoods (id) {
         return new Promise ( (resolve, reject) => {
-            let sql = 'SELECT good_name, calories_per_100grams, price_per_1kg FROM goods WHERE id = '+this.sqlConnection.escape(id);
+            let sql = `SELECT good_name, calories_per_100grams, price_per_1kg FROM goods WHERE id = ${this.sqlConnection.escape(id)}`;
             this.sqlConnection.query(sql, (err, results) => {
                 if (err) reject(err.name);
                 resolve(results);
@@ -191,48 +191,27 @@ class Database {
         })
     }*/
 
-    updateUserGoods (path, name, newGoods) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-        return new Promise( (resolve, reject) => {
-            Database.readFile(path)
-                .then ( (database) => {
-                    let currentUser = database.filter( (user) => {
-                        return user.name === name
-                    });
-                    let currentUserGoods = currentUser[0].goods;
-                    currentUserGoods = currentUserGoods.concat(JSON.parse(newGoods));
-                    Database.deleteDuplicates(currentUserGoods);
-                    let newDatabase = database.map( (user) => {
-                        if (user.name === name) {
-                            return {
-                                name: name,
-                                password: user.password,
-                                goods: currentUserGoods
-                            }
-                        } else {
-                            return user
-                        }
-                    });
-                    Database.writeFile(path, JSON.stringify(newDatabase))
-                    .then ( () => {
-                        resolve ('saved')
-                    }, error => {
-                        reject(error.message)
-                    })
+    updateUserGoods (id,  newGoods) {
+        Database.deleteDuplicates(newGoods);
+        return new Promise ( (resolve, reject) => {
+            this.findUserGoods(id)
+                .then ( (storedGoods) => {
+                    return Database.checkInsertOrUpdate(newGoods, storedGoods)
                 })
-        })
+                .then( result => {
+                    return new Promise(this.multipleInsertUserGoods(id, result))
+                })
+
+        });
+
+
+
+
+
+
+
+
+
 
 
 
@@ -240,35 +219,20 @@ class Database {
     }
 
     multipleInsertUserGoods (id, newGoods) {
-
-
-
-
-
+        let insertGoods = newGoods.insertGoods;
         return new Promise ( (resolve, reject) => {
+            let sql = ``
 
-
-
-            Database.readFile(path)
-            .then ( (data) => {
-                let userGoods = {
-                    name: name,
-                    password: password,
-                    goods: JSON.parse(newGoods)
-                };
-                Database.deleteDuplicates(userGoods.goods);
-                data.push(userGoods);
-                Database.writeFile(path, JSON.stringify(data))
-                .then ( result => {
-                    resolve (result)
-                })
-            })
         })
 
 
 
+    }
 
+    updateGoodRow (id, newGood) {
+        return new Promise( (resolve, reject) => {
 
+        })
     }
 
     static deleteUserGoods (path, name, goodList) {
@@ -310,21 +274,42 @@ class Database {
     }
 
     static deleteDuplicates (goods) {
-        var i;
-        for (i=0; i<goods.length; i++) {
-            let hasDuplicates = false;
-            for (let j=i+1; j<goods.length; j++) {
-                if (goods[i].good_name === goods[j].good_name) {
-                    hasDuplicates = true;
-                    break
+            var i;
+            for (i=0; i<goods.length; i++) {
+                if (goods.length === 1) return;
+                let hasDuplicates = false;
+                for (let j=i+1; j<goods.length; j++) {
+                    if (goods[i].good_name === goods[j].good_name) {
+                        hasDuplicates = true;
+                        break
+                    }
+                }
+                if (hasDuplicates) {
+                    goods.splice(i,1);
+                    i--
                 }
             }
-            if (hasDuplicates) {
-                goods.splice(i,1);
-                i--
+    }
+
+    static checkInsertOrUpdate (newGoods, storedGoods) {
+        let insertGoods = [];
+        let updateGoods = [];
+        newGoods.forEach( newGood => {
+            let sameGood = storedGoods.filter ( storedGood => {
+                return storedGood.good_name === newGood.good_name
+            });
+            if (sameGood.length === 1) {
+                updateGoods.push(newGood)
+            } else {
+                insertGoods.push(newGood)
             }
+        });
+        return {
+            updateGoods,
+            insertGoods
         }
     }
+
 }
 
 
@@ -372,14 +357,11 @@ class Server  {
             caloriesDatabase.connect('calories');
             caloriesDatabase.findUserId(req.body.name, req.body.password)
                 .then((userId) => {
-
-
-
-
-                }, (err) => {
-                    caloriesDatabase.dropConnection();
+                    return caloriesDatabase.updateUserGoods(userId, JSON.parse(req.body.newGoods))
+                })
+                .catch( (err) => {
                     res.status(500).end(err);
-                });
+                })
 
 
 
