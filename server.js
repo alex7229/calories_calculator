@@ -406,7 +406,7 @@ class Server  {
     }
     
     static listenGetHTML() {
-        app.post('/philippine-crosswords/getHTML', (req, res) => {
+        app.post('/getPageHTML', (req, res) => {
             let headers = {
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
                 'accept-language' :'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4,uk;q=0.2'
@@ -424,15 +424,10 @@ class Server  {
                     res.send(body);
                 }
             });
-
-
-
-
-
-
-         
         })
     }
+
+
 
     static start () {
         Server.listenFindData();
@@ -444,6 +439,7 @@ class Server  {
 }
 
 Server.start();
+
 
 
 
