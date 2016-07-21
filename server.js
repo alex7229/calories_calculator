@@ -199,7 +199,7 @@ class Database {
                     return Database.checkInsertOrUpdate(newGoods, storedGoods)
                 })
                 .then( result => {
-                    return new Promise(this.multipleInsertUserGoods(id, result))
+                    return this.multipleInsertUserGoods(id, result.insertGoods)
                 })
 
         });
@@ -219,9 +219,25 @@ class Database {
     }
 
     multipleInsertUserGoods (id, newGoods) {
-        let insertGoods = newGoods.insertGoods;
         return new Promise ( (resolve, reject) => {
-            let sql = ``
+            console.log(newGoods);
+            let sql = `INSERT INTO goods (good_name, calories_per_100grams, price_per_1kg, id) `;
+            let sqlQuery = newGoods.map( (good) => {
+                return `SELECT '${this.sqlConnection.escape(good.good_name)}', ${this.sqlConnection.escape(good.calories_per_100grams)}, ${this.sqlConnection.escape(good.price_per_1kg)} UNION ALL `;
+
+
+                /*
+
+                 multiple insert
+
+                 INSERT INTO dbo.MyTable (ID, Name)
+                 SELECT 123, 'Timmy'
+                 UNION ALL
+                 SELECT 124, 'Jonny'
+                 UNION ALL
+                 SELECT 125, 'Sally'*/
+            }).join('').slice(0, -11);
+            console.log(sql+sqlQuery)
 
         })
 
@@ -409,8 +425,8 @@ class Server  {
         app.post('/getPageHTML', (req, res) => {
             let headers = {
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-                'accept-language' :'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4,uk;q=0.2'
-            };
+                'accept-language': 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4,uk;q=0.2'
+               };
             var request = require (`request`);
             let uri = req.body.pageUri;
             request({
@@ -427,6 +443,23 @@ class Server  {
         })
     }
 
+    static listenGetTranslation () {
+        app.post('/getTranslation', (req, res) => {
+            let key = `dict.1.1.20160720T151834Z.0891ee1d5583e351.d2e3090bd6ae6a0faf763b3082f3839f5781e8f3`;
+            let apiUrl = `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=${key}&lang=en-en&text=${req.body.word}`;
+            var request = require('request');
+            request({
+                url: apiUrl,
+                method: 'GET'
+            }, (err, response, body) => {
+                if (err) {
+                    res.status(500).send(error)
+                } else {
+                    res.send(body)
+                }
+            })
+        })
+    }
 
 
     static start () {
@@ -441,27 +474,3 @@ class Server  {
 Server.start();
 
 
-
-
-
-/*
-connection.query({
-    sql: 'select * from `city` where `countrycode`=?',
-    values: ['ukr']
-}, function (err, results, fields){
-    console.log(results[0]['ID'])
-});
-
-connection.end();
-*/
-
-/*
-
-multiple insert
-
-INSERT INTO dbo.MyTable (ID, Name)
- SELECT 123, 'Timmy'
- UNION ALL
- SELECT 124, 'Jonny'
- UNION ALL
- SELECT 125, 'Sally'*/
