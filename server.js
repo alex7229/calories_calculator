@@ -446,8 +446,25 @@ class Server  {
     static listenGetTranslation () {
         app.post('/getTranslation', (req, res) => {
             let key = `dict.1.1.20160720T151834Z.0891ee1d5583e351.d2e3090bd6ae6a0faf763b3082f3839f5781e8f3`;
-            let apiUrl = `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=${key}&lang=en-en&text=${req.body.word}`;
-            var request = require('request');
+            let apiUrl = `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=${key}&lang=en-${req.body.language}&text=${req.body.word}`;
+            const request = require('request');
+            request({
+                url: apiUrl,
+                method: 'GET'
+            }, (err, response, body) => {
+                if (err) {
+                    res.status(500).send(error)
+                } else {
+                    res.send(body)
+                }
+            })
+        })
+    }
+
+    static listenGetMeaning () {
+        app.post('/getMeaning', (req, res) => {
+            let apiUrl = `http://google-dictionary.so8848.com/meaning?word=${req.body.word}`;
+            const request = require('request');
             request({
                 url: apiUrl,
                 method: 'GET'
@@ -467,10 +484,96 @@ class Server  {
         Server.listenUpdateData();
         Server.listenDeleteData();
         Server.listenGetHTML();
+        Server.listenGetTranslation();
+        Server.listenGetMeaning();
     }
 
 }
 
 Server.start();
 
+
+(function saveData () {
+    const fs = require('fs');
+    fs.readFile('public/learnWords/wordsLists/sorted_34k.txt', 'utf8', (err, data) => {
+        if (err) throw err;
+        let words = JSON.parse(data);
+
+
+
+
+
+        function getTranslation (word) {
+            let key = `dict.1.1.20160720T151834Z.0891ee1d5583e351.d2e3090bd6ae6a0faf763b3082f3839f5781e8f3`;
+            let apiUrl = `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=${key}&lang=en-ru&text=${word}`;
+            const request = require('request');
+            request({
+                url: apiUrl,
+                method: 'GET'
+            }, (err, response, body) => {
+                if (err) {
+                    throw err
+                } else {
+                    let data = JSON.parse(body);
+                    if (data.def.length !== 0) {
+                        fs.writeFile(`public/learnWords/wordsLists/yandexTranslations/${word}.txt`,  body, {flag: 'wx'},  (err) => {
+                            if (err) {
+                                console.log(err.message)
+                            }
+                            console.log('It\'s saved!');
+                        });
+
+
+                        /*console.log(`there is translation`);
+                        console.log(body)*/
+
+
+
+
+                    } else {
+                        console.log(`Don\'t find translation. Word was ${word}`)
+                    }
+                }
+            });
+        }
+
+
+
+
+        function read (word) {
+            fs.readFile(`public/learnWords/wordsLists/yandexTranslations/${word}.txt`, 'utf8', (err, data) => {
+                if (err) {
+                    getTranslation(word)
+                } else {
+
+                }
+            })
+        }
+
+
+
+        /*(function findWords () {
+            let seconds = [];
+            for (let i=10; i<10000; i+=10) {
+                seconds.push(i)
+            }
+            for (let j=25; j<80; j++) {
+                setTimeout(function () {
+                    console.log(`start word with number ${j*100}`);
+                    for (let k=j*100; k<j*100+100; k++) {
+                        read(words[k].word)
+                    }
+                }, seconds[j-25]*1000);
+
+            }
+        }());*/
+
+        //saved first 1k words (every chunk of data is 100 words, time between requests is 10 secs)
+        //try to save another 8k words - total 9k
+        // saved only 3k?
+
+
+
+    });
+}());
 
