@@ -1,0 +1,93 @@
+button {
+    cursor: pointer
+}
+.mainButton {
+    position: relative;
+    float: left;
+}
+.bottom{
+    top: 50px
+}
+
+#authForm {
+    position: relative;
+    float: left;
+    width: 300px;
+    border: 1px solid black;
+}
+#formsContainer {
+    border: 1px solid black;
+    height: 800px;
+    position: relative;
+    top: 120px;
+    width: 1000px;
+    clear: both
+}
+.goodForm {
+    margin: 50px;
+    position: relative;
+    float: left
+}
+#deleteGoodsForm {
+    position: relative;
+    display: none;
+}
+#calculateCalories {
+    position: relative;
+    display: none;
+    float: right
+}
+input[type="number"] {
+    width: 70px;
+}
+#addButton {
+    position: absolute;
+    margin: -20px 0 0 115px;
+    height: 35px;
+    width: 35px;
+    background-image: url('images/addButton.png');
+    background-size: contain;
+    cursor: pointer;
+}
+#goodsList {
+    display: none;
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    left: 1000px;
+    text-align: center
+}
+h4, .goodNames {
+    margin: auto
+}
+.goodsNames {
+    font-style: italic;
+    cursor: pointer;
+    margin-top: 5px
+}
+.goodsNames:hover {
+    font-weight: bold;
+    font-style: normal;
+}
+
+#calculateCalories button {
+    margin-bottom: 15px
+}
+
+#calculateCalories input[type="number"] {
+    margin-bottom: 23px
+}
+#loginForm {
+    display: block;
+}
+#logoutForm {
+    display: none;
+}
+#currentUser {
+    font-style: oblique;
+}
+#underlined {
+    text-decoration: underline;
+    cursor: pointer;
+    color: blue;
+}

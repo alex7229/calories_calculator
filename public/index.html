@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calculate Calories</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="basic.css"/>
+    <script src="jquery-2.2.3.min.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+<form id="authForm">
+    <div id="loginForm">
+        <label for="name">Login</label><br>
+        <input placeholder="name" id='name' type="text"><br>
+        <label for="password">Password </label><span id="underlined" onclick="Controller.showPassword()"> (show/hide)</span><br>
+        <input placeholder="*******" id='password' type="password"><br>
+        <button type="button" onclick="controller.login()" id="loginBtn">Log in</button>
+    </div>
+    <div id="logoutForm">
+        Current user: <span id="currentUser"></span><br>
+        <button type="button" onclick="controller.logout()">Log out</button>
+    </div>
+</form>
+<div id="mainButtonsDiv">
+    <button type="button" class='mainButton' onclick="controller.updateAllData()">Update ALL products</button><br>
+    <button type="button" class='mainButton bottom' onclick="controller.insertAddGoodForm()">Add product form</button>
+    <button type="button" class='mainButton bottom' onclick="Controller.showDeleteForm()">Add form for delete</button>
+    <button type="button" class='mainButton bottom' onclick="controller.showCalculateForm()">Add inputs</button>
+    <button type="button" class='mainButton bottom' onclick="calculate.showGoods()">Test goods</button>
+</div>
+
+
+<div id="formsContainer">
+    <div id="deleteGoodsForm">
+        <form>
+            <label for="deleteGoods">Delete goods data by name (on server). Split on commas.</label><br>
+            <input id='deleteGoods' type="text">
+        </form>
+    </div>
+
+    <form id="calculateCalories">
+        <button type="button">Calculate</button><div id="addButton" onclick="controller.insertInputs()"></div><br>
+    </form>
+
+    <div id="goodsList">
+        <h4>List of goods (clickable)</h4>
+        <div id="goodsListInnerDiv">
+            <div class="goodsNames" onclick="Controller.setValue()">Bread</div>
+            <div class="goodsNames" onclick="Controller.setValue()">Potato</div>
+            <div class="goodsNames" onclick="Controller.setValue()">Mayonnaise</div>
+            <div class="goodsNames" onclick="Controller.setValue()">Ketchup</div>
+            <div class="goodsNames" onclick="Controller.setValue()">Meat</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
